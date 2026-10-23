@@ -1,4 +1,11 @@
 reg [7:0] mdv_inflight; // counter for how many ops are inside muldiv right now 
+
+/*
+VX_pe_switch drives this 
+pe_execute_if[0] ->  VX_alu_int
+pe_execute_if[1] -> VX_alu_muldiv
+
+*/
 wire mdv_in  = pe_execute_if[PE_IDX_MDV].valid && pe_execute_if[PE_IDX_MDV].ready; //1 in a cycle when an op enters muldiv
 wire mdv_out = pe_result_if[PE_IDX_MDV].valid  && pe_result_if[PE_IDX_MDV].ready; //1 in a cycle when a result leaves muldiv
 always @(posedge clk)
