@@ -5,12 +5,11 @@ These are the steps I use to build this repo and run kernels on UW-Madison's CHT
 (cycles, IPC, stalls, instruction mix, etc.).
 
 Note: The steps below run sgemm, the matrix-multiply kernel that ships with 
-Vortex (tests/regression/sgemm). You don't need to write or download a kernel.
+Vortex (tests/regression/sgemm)
 
-How this works
 
 Vortex's prebuilt toolchain (RISC-V compiler, Verilator, LLVM, etc.) only runs on Ubuntu, 
-and CHTC machines aren't Ubuntu. So we build an Apptainer container: an Ubuntu 22.04 
+and CHTC machines aren't Ubuntu. So I built an Apptainer container: an Ubuntu 22.04 
 image with the toolchain installed inside it at /opt/vortex-tools. You only build it once.
 
 1. Clone the repo on learn
@@ -18,6 +17,7 @@ image with the toolchain installed inside it at /opt/vortex-tools. You only buil
 3. Every time: start a job, enter the container, build Vortex, run kernels, exit
 
 1. Clone the repo
+
 
 ssh <netid>@learn.chtc.wisc.edu
 cd ~
@@ -28,8 +28,10 @@ git submodule update --init --recursive
 cd ~
 
 
+
 --recursive pulls in the third_party/ submodules (cvfpu, softfloat, ramulator...). 
 The build fails without them.
+
 
 2. Build the container
 
@@ -66,6 +68,7 @@ writable during the build otherwise, and apt-get fails.
 
 Then the submit file for the build job:
 
+
 cat > ~/build.sub <<'EOF'
 executable = /usr/bin/hostname
 transfer_input_files = image.def, vortex_gpgpu_rtl
@@ -79,6 +82,7 @@ EOF
 
 If a long paste comes out garbled in the terminal, check with cat image.def and 
 cat build.sub. If either looks wrong, create it with nano instead.
+
 
 Start the build job:
 
