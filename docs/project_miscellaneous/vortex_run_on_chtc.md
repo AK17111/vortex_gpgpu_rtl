@@ -1,8 +1,7 @@
 Running Vortex on CHTC
 
 These are the steps I use to build this repo and run kernels on UW-Madison's CHTC 
-(learn.chtc.wisc.edu). At the end you get a log with Vortex's performance counters 
-(cycles, IPC, stalls, instruction mix, etc.).
+(learn.chtc.wisc.edu).
 
 Note: The steps below run sgemm, the matrix-multiply kernel that ships with 
 Vortex (tests/regression/sgemm)
@@ -60,7 +59,7 @@ From: ubuntu:22.04
 EOF
 
 
-What it does: starts from Ubuntu 22.04, installs the packages from 
+What it does- starts from Ubuntu 22.04, installs the packages from 
 ci/install_dependencies.sh, copies the repo in just long enough to run configure 
 and toolchain_install.sh, then deletes the copy. The toolchain stays at 
 /opt/vortex-tools. The chmod 1777 /tmp line is needed because /tmp isn't 
