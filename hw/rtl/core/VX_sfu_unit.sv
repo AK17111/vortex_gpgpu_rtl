@@ -196,7 +196,7 @@ import VX_raster_pkg::*;
                     || pe_execute_if[PE_IDX_WCTL].valid  // op arriving 
                     || (wctl_inflight != 0)              // ops still inside
                     || wctl_ctl_busy                     // control output still asserted
-                    || txbar_bus_if.valid;               // DXA barrier event (0 when DXA is off)
+                    || txbar_bus_if.valid;               // DXA barrier event (0 when DXA is off) -this comes from memory as a copy, instr, sfu needed and doesnt depend on warp
 
     VX_clockgate wctl_icg (
         .clk_in  (clk),
