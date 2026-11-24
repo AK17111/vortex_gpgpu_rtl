@@ -193,7 +193,7 @@ import VX_raster_pkg::*;
                       || warp_ctl_if.bar_valid   || warp_ctl_if.wsync_valid;
 
     wire wctl_clk_en = reset
-                    || pe_execute_if[PE_IDX_WCTL].valid  // op arriving (or waiting on a drain)
+                    || pe_execute_if[PE_IDX_WCTL].valid  // op arriving 
                     || (wctl_inflight != 0)              // ops still inside
                     || wctl_ctl_busy                     // control output still asserted
                     || txbar_bus_if.valid;               // DXA barrier event (0 when DXA is off)
