@@ -87,13 +87,53 @@ module VX_alu_unit import VX_gpu_pkg::*; #(
             .execute_out_if (pe_execute_if),
             .result_in_if   (pe_result_if)
         );
+   //TODO : REMOVE THIS COMMENT IF IFDEF INSTANTIATION WORKS
+    //     VX_alu_int #(
+    //         .INSTANCE_ID (`SFORMATF(("%s-int%0d", INSTANCE_ID, block_idx))),
+    //         .BLOCK_IDX (block_idx),
+    //         .NUM_LANES (NUM_LANES)
+    //     ) alu_int (
+    //         .clk        (clk),
+    //         .reset      (reset),
+    //         .execute_if (pe_execute_if[PE_IDX_INT]),
+    //         .branch_ctl_if (branch_ctl_if[block_idx]),
+    //         .result_if  (pe_result_if[PE_IDX_INT])
+    //     );
+
+    // `ifdef VX_CFG_EXT_M_ENABLE
+    //     VX_alu_muldiv #(
+    //         .INSTANCE_ID (`SFORMATF(("%s-muldiv%0d", INSTANCE_ID, block_idx))),
+    //         .NUM_LANES (NUM_LANES)
+    //     ) muldiv_unit (
+    //         .clk        (clk),
+    //         .reset      (reset),
+    //         .execute_if (pe_execute_if[PE_IDX_MDV]),
+    //         .result_if  (pe_result_if[PE_IDX_MDV])
+    //     );
+    // `endif
+            //clock gate: integer ALU (-DVX_ICG_ALU_INT)
+        wire int_clk;
+    `ifdef VX_ICG_ALU_INT
+        VX_unit_clkgate int_icg (
+            .clk       (clk),
+            .reset     (reset),
+            .req_valid (pe_execute_if[PE_IDX_INT].valid),
+            .req_fire  (pe_execute_if[PE_IDX_INT].valid && pe_execute_if[PE_IDX_INT].ready),
+            .rsp_fire  (pe_result_if[PE_IDX_INT].valid && pe_result_if[PE_IDX_INT].ready),
+            // branch_ctl_if comes out of a register and needs one more edge to clear
+            .busy      (branch_ctl_if[block_idx].valid),
+            .clk_out   (int_clk)
+        );
+    `else
+        assign int_clk = clk;
+    `endif
 
         VX_alu_int #(
             .INSTANCE_ID (`SFORMATF(("%s-int%0d", INSTANCE_ID, block_idx))),
             .BLOCK_IDX (block_idx),
             .NUM_LANES (NUM_LANES)
         ) alu_int (
-            .clk        (clk),
+            .clk        (int_clk),
             .reset      (reset),
             .execute_if (pe_execute_if[PE_IDX_INT]),
             .branch_ctl_if (branch_ctl_if[block_idx]),
@@ -101,11 +141,27 @@ module VX_alu_unit import VX_gpu_pkg::*; #(
         );
 
     `ifdef VX_CFG_EXT_M_ENABLE
+        //clock gate: multiply/divide (-DVX_ICG_MULDIV) 
+        wire mdv_clk;
+    `ifdef VX_ICG_MULDIV
+        VX_unit_clkgate mdv_icg (
+            .clk       (clk),
+            .reset     (reset),
+            .req_valid (pe_execute_if[PE_IDX_MDV].valid),
+            .req_fire  (pe_execute_if[PE_IDX_MDV].valid && pe_execute_if[PE_IDX_MDV].ready),
+            .rsp_fire  (pe_result_if[PE_IDX_MDV].valid && pe_result_if[PE_IDX_MDV].ready),
+            .busy      (1'b0),
+            .clk_out   (mdv_clk)
+        );
+    `else
+        assign mdv_clk = clk;
+    `endif
+
         VX_alu_muldiv #(
             .INSTANCE_ID (`SFORMATF(("%s-muldiv%0d", INSTANCE_ID, block_idx))),
             .NUM_LANES (NUM_LANES)
         ) muldiv_unit (
-            .clk        (clk),
+            .clk        (mdv_clk),
             .reset      (reset),
             .execute_if (pe_execute_if[PE_IDX_MDV]),
             .result_if  (pe_result_if[PE_IDX_MDV])
