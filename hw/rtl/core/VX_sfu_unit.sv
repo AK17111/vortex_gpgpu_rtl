@@ -198,6 +198,7 @@ import VX_raster_pkg::*;
                     || wctl_ctl_busy                     // control output still asserted
                     || txbar_bus_if.valid;               // DXA barrier event (0 when DXA is off) -this comes from memory as a copy, instr, sfu needed and doesnt depend on warp
 
+    // clk_gate = 
     VX_clockgate wctl_icg (
         .clk_in  (clk),
         .en      (wctl_clk_en),
