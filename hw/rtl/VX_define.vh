@@ -598,4 +598,22 @@
         logic [__lanes__-1:0][`VX_CFG_XLEN-1:0] data; \
     } __name__``_result_t
 
+// Clock gating switches (all off by default).
+// -DVX_ICG_ENABLE turns on every unit gate; or pick units one at a time:
+//   -DVX_ICG_ALU_INT  -DVX_ICG_MULDIV  -DVX_ICG_FPU  -DVX_ICG_SFU
+`ifdef VX_ICG_ENABLE
+`ifndef VX_ICG_ALU_INT
+`define VX_ICG_ALU_INT
+`endif
+`ifndef VX_ICG_MULDIV
+`define VX_ICG_MULDIV
+`endif
+`ifndef VX_ICG_FPU
+`define VX_ICG_FPU
+`endif
+`ifndef VX_ICG_SFU
+`define VX_ICG_SFU
+`endif
+`endif
+
 `endif // VX_DEFINE_VH
