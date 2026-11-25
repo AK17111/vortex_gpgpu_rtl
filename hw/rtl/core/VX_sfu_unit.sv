@@ -167,42 +167,27 @@ import VX_raster_pkg::*;
     VX_txbar_bus_if txbar_bus_if();
 
 
-// Clock gating for the warp-control sub-unit (split/join/tmc/pred/bar).
-// Turned on with -DVX_ICG_ENABLE; without it, wctl runs on clk as before.
+//clock gate: warp-control sub-unit (-DVX_ICG_SFU)
+    // Only wctl (split/join/tmc/pred/bar/wspawn/wsync) is gated. csr_unit
+    // stays on clk: the FPU writes fflags into it every float op, for now !
     wire wctl_clk;
+`ifdef VX_ICG_SFU
+    // warp_ctl_if comes out of a register for one cycle after an op and
+    // needs one more edge to clear; DXA barrier events (txbar) can arrive
+    // with no op at the input (always 0 when DXA is off).
+    wire wctl_busy = warp_ctl_if.tmc_valid   || warp_ctl_if.wspawn_valid
+                  || warp_ctl_if.split_valid || warp_ctl_if.sjoin_valid
+                  || warp_ctl_if.bar_valid   || warp_ctl_if.wsync_valid
+                  || txbar_bus_if.valid;
 
-`ifdef VX_ICG_ENABLE
-    // Ops inside wctl: +1 when one enters, -1 when its result leaves.
-    // Runs on the ungated clk so it can see the next op arrive.
-    reg [3:0] wctl_inflight;
-    wire wctl_in  = pe_execute_if[PE_IDX_WCTL].valid && pe_execute_if[PE_IDX_WCTL].ready;
-    wire wctl_out = pe_result_if[PE_IDX_WCTL].valid  && pe_result_if[PE_IDX_WCTL].ready;
-
-    always @(posedge clk) begin
-        if (reset) begin
-            wctl_inflight <= '0;
-        end else begin
-            wctl_inflight <= wctl_inflight + 4'(wctl_in) - 4'(wctl_out);
-        end
-    end
-
-    // wctl drives warp_ctl_if from a register for one cycle after an op;
-    // it needs one more clock edge to clear that valid.
-    wire wctl_ctl_busy = warp_ctl_if.tmc_valid  || warp_ctl_if.wspawn_valid
-                      || warp_ctl_if.split_valid || warp_ctl_if.sjoin_valid
-                      || warp_ctl_if.bar_valid   || warp_ctl_if.wsync_valid;
-
-    wire wctl_clk_en = reset
-                    || pe_execute_if[PE_IDX_WCTL].valid  // op arriving 
-                    || (wctl_inflight != 0)              // ops still inside
-                    || wctl_ctl_busy                     // control output still asserted
-                    || txbar_bus_if.valid;               // DXA barrier event (0 when DXA is off) -this comes from memory as a copy, instr, sfu needed and doesnt depend on warp
-
-    // clk_gate = 
-    VX_clockgate wctl_icg (
-        .clk_in  (clk),
-        .en      (wctl_clk_en),
-        .clk_out (wctl_clk)
+    VX_unit_clkgate wctl_icg (
+        .clk       (clk),
+        .reset     (reset),
+        .req_valid (pe_execute_if[PE_IDX_WCTL].valid),
+        .req_fire  (pe_execute_if[PE_IDX_WCTL].valid && pe_execute_if[PE_IDX_WCTL].ready),
+        .rsp_fire  (pe_result_if[PE_IDX_WCTL].valid && pe_result_if[PE_IDX_WCTL].ready),
+        .busy      (wctl_busy),
+        .clk_out   (wctl_clk)
     );
 `else
     assign wctl_clk = clk;
