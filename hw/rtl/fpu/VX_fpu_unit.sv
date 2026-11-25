@@ -109,6 +109,25 @@ module VX_fpu_unit import VX_gpu_pkg::*, VX_fpu_pkg::*; #(
         assign fpu_req_valid = per_block_execute_if[block_idx].valid && ~mdata_full;
         assign per_block_execute_if[block_idx].ready = fpu_req_ready && ~mdata_full;
 
+        //clock gate: FPU datapath core (-DVX_ICG_FPU) 
+        // Only the FPU core is gated. The tag store, fflags register,
+        // fpu_csr_reg and rsp_buf stay on clk (fpu_csr_reg is a register
+        // that drives fpu_csr_if every cycle).
+        wire fpu_core_clk;
+    `ifdef VX_ICG_FPU
+        VX_unit_clkgate fpu_icg (
+            .clk       (clk),
+            .reset     (reset),
+            .req_valid (per_block_execute_if[block_idx].valid),
+            .req_fire  (fpu_req_valid && fpu_req_ready),
+            .rsp_fire  (fpu_rsp_fire),
+            .busy      (1'b0),
+            .clk_out   (fpu_core_clk)
+        );
+    `else
+        assign fpu_core_clk = clk;
+    `endif
+
     `ifdef VX_CFG_FPU_TYPE_DPI
 
         VX_fpu_dpi #(
@@ -116,7 +135,7 @@ module VX_fpu_unit import VX_gpu_pkg::*, VX_fpu_pkg::*; #(
             .TAG_WIDTH  (TAG_WIDTH),
             .OUT_BUF    (PARTIAL_BW ? 1 : 3)
         ) fpu_dpi (
-            .clk        (clk),
+            .clk        (fpu_core_clk), //gated clock
             .reset      (reset),
 
             .valid_in   (fpu_req_valid),
@@ -145,7 +164,7 @@ module VX_fpu_unit import VX_gpu_pkg::*, VX_fpu_pkg::*; #(
             .TAG_WIDTH  (TAG_WIDTH),
             .OUT_BUF    (PARTIAL_BW ? 1 : 3)
         ) fpu_fpnew (
-            .clk        (clk),
+            .clk        (fpu_core_clk), //gated clock
             .reset      (reset),
 
             .valid_in   (fpu_req_valid),
@@ -174,7 +193,7 @@ module VX_fpu_unit import VX_gpu_pkg::*, VX_fpu_pkg::*; #(
             .TAG_WIDTH  (TAG_WIDTH),
             .OUT_BUF    (PARTIAL_BW ? 1 : 3)
         ) fpu_dsp (
-            .clk        (clk),
+            .clk        (fpu_core_clk),  //gated clock
             .reset      (reset),
 
             .valid_in   (fpu_req_valid),
@@ -203,7 +222,7 @@ module VX_fpu_unit import VX_gpu_pkg::*, VX_fpu_pkg::*; #(
             .TAG_WIDTH  (TAG_WIDTH),
             .OUT_BUF    (PARTIAL_BW ? 1 : 3)
         ) fpu_std (
-            .clk        (clk),
+            .clk        (fpu_core_clk),  //gated clock
             .reset      (reset),
 
             .valid_in   (fpu_req_valid),
